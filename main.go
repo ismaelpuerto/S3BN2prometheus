@@ -56,12 +56,6 @@ type result_struct struct {
 	} `json:"Records"`
 }
 
-var s3_objectCreated_wildcard = prometheus.NewCounter(
-	prometheus.CounterOpts{
-		Name: "s3_objectCreated_wildcard",
-		Help: "Total number of requests to root",
-	},
-)
 var s3_objectCreated_put = prometheus.NewCounter(
 	prometheus.CounterOpts{
 		Name: "s3_objectCreated_put",
@@ -86,12 +80,7 @@ var s3_objectCreated_completeMultipartUpload = prometheus.NewCounter(
 		Help: "Total number of requests to root",
 	},
 )
-var s3_objectRemoved_wildcard = prometheus.NewCounter(
-	prometheus.CounterOpts{
-		Name: "s3_objectRemoved_wildcard",
-		Help: "Total number of requests to root",
-	},
-)
+
 var s3_objectRemoved_delete = prometheus.NewCounter(
 	prometheus.CounterOpts{
 		Name: "s3_objectRemoved_delete",
@@ -117,9 +106,7 @@ func body(rw http.ResponseWriter, req *http.Request) {
 		panic(err)
 	}
 	log.Println("New Operation:", t.Records[0].EventName)
-	if t.Records[0].EventName == "s3:ObjectCreated:*" {
-		s3_objectCreated_wildcard.Inc()
-	} else if t.Records[0].EventName == "s3:ObjectCreated:Put" {
+	if t.Records[0].EventName == "s3:ObjectCreated:Put" {
 		s3_objectCreated_put.Inc()
 	} else if t.Records[0].EventName == "s3:ObjectCreated:Post" {
 		s3_objectCreated_post.Inc()
@@ -127,8 +114,6 @@ func body(rw http.ResponseWriter, req *http.Request) {
 		s3_objectCreated_copy.Inc()
 	} else if t.Records[0].EventName == "s3:ObjectCreated:CompleteMultipartUpload" {
 		s3_objectCreated_completeMultipartUpload.Inc()
-	} else if t.Records[0].EventName == "s3:ObjectRemoved:*" {
-		s3_objectRemoved_wildcard.Inc()
 	} else if t.Records[0].EventName == "s3:ObjectRemoved:Delete" {
 		s3_objectRemoved_delete.Inc()
 	} else if t.Records[0].EventName == "s3:ObjectRemoved:DeleteMarkerCreated" {
@@ -141,12 +126,10 @@ func body(rw http.ResponseWriter, req *http.Request) {
 func main() {
 	http.HandleFunc("/test", body)
 	http.Handle("/metrics", promhttp.Handler())
-	prometheus.MustRegister(s3_objectCreated_wildcard)
 	prometheus.MustRegister(s3_objectCreated_put)
 	prometheus.MustRegister(s3_objectCreated_post)
 	prometheus.MustRegister(s3_objectCreated_copy)
 	prometheus.MustRegister(s3_objectCreated_completeMultipartUpload)
-	prometheus.MustRegister(s3_objectRemoved_wildcard)
 	prometheus.MustRegister(s3_objectRemoved_delete)
 	prometheus.MustRegister(s3_objectRemoved_deleteMarkerCreated)
 	log.Fatal(http.ListenAndServe(":8080", nil))
